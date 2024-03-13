@@ -1,0 +1,40 @@
+---------------------------------Profiling function---------
+#viewname='vg_recordtype'
+from pyspark.sql.types import StructType, StructField, StringType
+def funProfile(viewname):
+	#define output schema
+	schema = StructType([
+		StructField("Field", StringType(), True), 
+		StructField("Count", StringType(), False),
+		StructField("DataAvail%", StringType(), False),
+		StructField("Unique_cnt", StringType(), False),
+		StructField("min_value", StringType(), False),
+		StructField("max_value", StringType(), False),
+		StructField("Field1", StringType(), False),
+		StructField("Top10", StringType(), False)
+	])
+	profile_df = spark.createDataFrame([], schema)
+	#get view result into df
+	vdf = spark.sql(f"""select * from {viewname}""")
+	#get table count
+	tblrwcount = vdf.count()
+	print(tblrwcount)
+	for field in vdf.schema.fields :                #loop each field in df
+		fieldname = field.name
+		fieldname =  f'CAST({field.name} as string) ' if str(field.dataType)[0:4] in ['Bool'] else f'CAST({field.name} as date) ' if  str(field.dataType)[0:4] in ['Date','Time'] else field.name
+		if field.name!='row_number' and str(field.dataType)[0:3] not in ['Map'] :  #skip few fields
+			sql1=f"""select '{field.name}' as Field, count(nullif({field.name},'')) as cnt, round((count(nullif({field.name},'')) /count(1) *100),2) as ValueExistsPerc, count(distinct  {field.name}) as Unique_cnt,cast(min({fieldname}) as string) as min_value, cast(max({fieldname}) as string) as max_value from {viewname}"""
+			result = spark.sql(sql1)
+			#print(result.select('Unique_cnt').first()[0])
+			if (result.select('Unique_cnt').first()[0] in [tblrwcount,0,1]):  #skip keys or blank  fields
+				sqltop10 = (f"""select '{field.name}' as Field,'' as Perc """)
+			else:				
+				sqltop10 = (f"""select '{field.name}' as Field, concat({fieldname},' #',count(1),'(', round(100*(count({fieldname})/{tblrwcount}),2),'%)') as Perc from {viewname} group by {fieldname} order by count({fieldname}) desc """)
+				#print(sqltop10)
+			dftop10 = spark.sql(sqltop10).limit(10).groupby('Field').agg(f.concat_ws("\n", f.collect_list('Perc'))).alias('Top10')
+			profile_df = profile_df.unionAll(result.join(dftop10))
+	display(profile_df.select('Field','Count','DataAvail%','Unique_cnt','min_value','max_value','Top10'))
+
+
+Enhamcement- add complex struct field like Map at the end without values. Explode array to string using concat_ws(';',array)
+--------------------------------------
