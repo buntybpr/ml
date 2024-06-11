@@ -1,0 +1,12 @@
+https://www.kaggle.com/code/awsaf49/pii-data-detection-kerasnlp-starter-notebook
+Machine Learning Interview questions
+Use HuggingFace tutorials and practice
+Finish Tensorflow and Pytorch Tutorials
+Complete Azure Certification
+Learn pipeline - how to deploy model in pipeline and Wheel deployment
+Learn flask to deploy model as serivce/api
+Learn DataBrick ML tutorials
+Learn latest technologies like RAG and Embeddings
+Polar Library instead of pandas for EDA
+Learn bert
+Learn transformers
